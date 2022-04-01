@@ -8,7 +8,6 @@ from django.core.exceptions import PermissionDenied
 from .forms import CommentForm
 
 
-
 class PostList(ListView):
     model = Post
     ordering = '-pk'
@@ -22,7 +21,7 @@ class PostList(ListView):
 
 class PostDetail(DetailView):
     model = Post
-    
+
     def get_context_data(self, **kwargs):
         context = super(PostDetail, self).get_context_data()
         context['categories'] = Category.objects.all()
@@ -62,7 +61,7 @@ class PostCreate(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             return response
 
         else:
-                return redirect('/blog/')
+            return redirect('/blog/')
 
 
 class PostUpdate(LoginRequiredMixin, UpdateView):
@@ -108,6 +107,16 @@ class PostUpdate(LoginRequiredMixin, UpdateView):
         return response
 
 
+class CommentUpdate(LoginRequiredMixin, UpdateView):
+    model = Comment
+    form_class = CommentForm
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user == self.get_object().author:
+            return super(CommentUpdate, self).dispatch(request, *args, **kwargs)
+        else:
+            raise PermissionDenied
+
 
 def category_page(request, slug):
     if slug == 'no_category':
@@ -144,8 +153,9 @@ def tag_page(request, slug):
         }
     )
 
+
 def new_comment(request, pk):
-    if request.user.is_authenticated :
+    if request.user.is_authenticated:
         post = get_object_or_404(Post, pk=pk)
 
         if request.method == 'POST':
